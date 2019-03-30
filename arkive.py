@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 XKCD_TEMPLATE_URL = 'https://xkcd.com/%s/info.0.json'
 LATEST_XKCD_URL = 'https://xkcd.com/info.0.json'
 
-class XkcdHandler(object):
+class ARkiveHandler(object):
     '''
     This plugin provides several commands that can be used for fetch a comic
     strip from https://xkcd.com. The bot looks for messages starting with
@@ -118,4 +118,4 @@ def fetch_xkcd_query(mode: int, comic_id: Optional[str]=None) -> Dict[str, str]:
 
     return xkcd_json
 
-handler_class = XkcdHandler
+handler_class = ARkiveHandler
