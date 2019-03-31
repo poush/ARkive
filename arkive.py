@@ -2,8 +2,15 @@ import random
 
 import logging
 import requests
-
+import urllib
+import json
+import htmlmin
 from typing import Any, Dict, Optional
+
+from graphqlclient import GraphQLClient
+
+client = GraphQLClient('https://arkive.herokuapp.com/v1alpha1/graphql')
+
 
 XKCD_TEMPLATE_URL = 'https://xkcd.com/%s/info.0.json'
 LATEST_XKCD_URL = 'https://xkcd.com/info.0.json'
@@ -22,18 +29,89 @@ class ARkiveHandler(object):
     }
 
     def usage(self) -> str:
+        print(self.findmeMajedaarID('happy'))
+
         return '''
                 This plugin do something
             '''
 
     def findmeMajedaarID(self, k):
-        return k.strip()
+
+        result = client.execute('''
+        query{
+        ARs(where:{file: {_eq:"'''+k+'''"}}){
+            file,
+            name,
+            NNJson,
+            filePath,
+            init,
+            detectStateFn,
+            created_by
+        }
+        }
+        ''')
+        res = json.loads(result)['data']['ARs']
+        if len(res) == 0:
+            return "oops nothing found"
+        res = res[0]
+
+        return res['created_by']
+        # import urllib.request
+        # data = str(urllib.request.urlopen('https://raw.githubusercontent.com/shashaBot/jeelizFaceFilter/master/index.html').read())
+    
+        # data = data.replace("{{filePath}}", res['filePath'])
+        # data = data.replace("{{NNJson}}", res['NNJson'])
+        # data = data.replace("{{detectStateFn}}", res['detectStateFn'])
+        # data = data.replace("{{initSceneFn}}", res['init'])
+        # data = data.replace("\n", "")
+        # print(htmlmin.minify(data, remove_empty_space=True))
+        # return urllib.parse.quote(htmlmin.minify(data, remove_empty_space=True))
+
+
+    def findAndMake(self,c):
+        # if c == "spaceship":
+        # return "<a href='toApp://'>App</a>"
+        return "[Checkout AR Experience]("+ self.findmeMajedaarID(c) +")"
+        # return "[Checkout AR Experience](http://ARKive.tech/?q=" + self.findmeMajedaarID(c) +")"
+
+    def searchAndMake(self, c, x):
+        # if c == "search":
+
+        result = client.execute('''
+        query{
+        ARs(where:{keywords: {_eq:"'''+x+'''"}}){
+            file,
+            name,
+            NNJson,
+            filePath,
+            init,
+            detectStateFn
+        }
+        }
+        ''')
+        res = json.loads(result)['data']['ARs']
+
+        if len(res) == 0:
+            return "oops nothing found"
+        else:
+            s = ""
+            for r in res:
+                s += r['name']+", "
+
+            return "You can use:  "+ s[0:-1]
 
     def handle_message(self, message, bot_handler: Any) -> None:
         original_content = message['content']
         original_sender = message['sender_email']
 
-        new_content = "https://poush.localtunnel.me?majedaarID="+ self.findmeMajedaarID(original_content)
+        keywords = original_content.split(" ")
+        print(keywords)
+        if len(keywords) < 2:
+            new_content = self.findAndMake(original_content)
+        else:
+            keys = keywords[1]
+            new_content = self.searchAndMake(keywords[0], keys)
+        # new_content = "you can use :D"
 
         bot_handler.send_reply(message, new_content)
 
